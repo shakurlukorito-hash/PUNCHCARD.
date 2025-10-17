@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Dashboard | PunchCard</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Feather Icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+  
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    .gradient-bg {
+      background: linear-gradient(135deg, #3B82F6 0%, #10B981 100%);
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      transition: all 0.3s ease;
+    }
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Apple-style toggle switch */
+    .toggle-checkbox:checked {
+      right: 0;
+      border-color: #10B981;
+    }
+    .toggle-checkbox:checked + .toggle-label {
+      background-color: #10B981;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <div class="gradient-bg py-4 shadow-md">
+    <div class="container mx-auto px-4 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i data-feather="clock" class="text-white w-6 h-6"></i>
+        <h1 class="text-white text-xl font-bold">PunchCard</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <div class="relative">
+          <a href="#" class="text-white hover:text-opacity-80" id="notificationBtn">
+            <i data-feather="bell" class="w-5 h-5"></i>
+            <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center hidden">3</span>
+          </a>
+        </div>
+        <a href="#" class="text-white hover:text-opacity-80" id="profileBtn">
+          <i data-feather="user" class="w-5 h-5"></i>
+        </a>
+        <a href="index.html" class="text-white hover:text-opacity-80">
+          <i data-feather="log-out" class="w-5 h-5"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row gap-8">
+      <!-- Sidebar -->
+      <div class="w-full md:w-64 bg-white rounded-lg shadow-sm p-4 h-fit">
+        <div class="flex items-center space-x-3 mb-6">
+          <div class="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center">
+            <i data-feather="user" class="text-blue-600"></i>
+          </div>
+          <div>
+            <h3 id="staffName" class="font-medium">John Doe</h3>
+            <p class="text-xs text-gray-500" id="staffId">Staff ID: PC001</p>
+          </div>
+        </div>
+        <nav class="space-y-2">
+          <a href="#" class="flex items-center space-x-3 p-2 bg-blue-100 rounded-lg text-blue-600 font-medium">
+            <i data-feather="home"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="#" class="flex items-center space-x-3 p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+            <i data-feather="clock"></i>
+            <span>Attendance</span>
+          </a>
+          <a href="#" class="flex items-center space-x-3 p-2 text-gray-600 hover:bg-gray-100 rounded-lg" id="reportsLink">
+            <i data-feather="file-text"></i>
+            <span>Reports</span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- Main Content -->
+      <div class="flex-1">
+        <!-- Today's Status -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6 fade-in">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Today's Status</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="bg-green-50 border border-green-100 rounded-lg p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="text-green-800">
+                  <p class="text-sm font-medium">Check In</p>
+                  <p id="clockInTime" class="text-2xl font-bold">--:--</p>
+                </div>
+                <div class="bg-green-100 p-2 rounded-lg">
+                  <i data-feather="log-in" class="text-green-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-gray-50 border border-gray-100 rounded-lg p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="text-gray-800">
+                  <p class="text-sm font-medium">Check Out</p>
+                  <p id="clockOutTime" class="text-2xl font-bold">--:--</p>
+                </div>
+                <div class="bg-gray-200 p-2 rounded-lg">
+                  <i data-feather="log-out" class="text-gray-600"></i>
+                </div>
+              </div>
+            </div>
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="text-blue-800">
+                  <p class="text-sm font-medium">Total Hours</p>
+                  <p id="totalHours" class="text-2xl font-bold">0h 0m</p>
+                </div>
+                <div class="bg-blue-100 p-2 rounded-lg">
+                  <i data-feather="activity" class="text-blue-600"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Split Dashboard -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <!-- Manual Check-in Section -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center mb-4">
+              <div class="bg-blue-100 p-2 rounded-lg mr-3">
+                <i data-feather="user-check" class="text-blue-600"></i>
+              </div>
+              <h2 class="text-xl font-bold text-gray-800">Manual Check-in</h2>
+            </div>
+            <p class="text-gray-600 mb-4">Manually check in and out using the buttons below.</p>
+            
+            <!-- Comment Section -->
+            <div class="mb-4">
+              <label for="latenessReason" class="block text-sm font-medium text-gray-700 mb-2">
+                Reason for lateness (AI-assisted)
+              </label>
+              <textarea
+                id="latenessReason"
+                rows="2"
+                placeholder="e.g. Traffic delay, system issue, personal emergency..."
+                class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+              ></textarea>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-center gap-4">
+              <button id="checkInBtn" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 flex items-center transition duration-200">
+                <i data-feather="log-in" class="w-4 h-4 mr-2"></i> Check In
+              </button>
+              <button id="checkOutBtn" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg font-medium hover:bg-gray-300 flex items-center transition duration-200" disabled>
+                <i data-feather="log-out" class="w-4 h-4 mr-2"></i> Check Out
+              </button>
+            </div>
+          </div>
+
+          <!-- Auto Check-in Section -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center mb-4">
+              <div class="bg-green-100 p-2 rounded-lg mr-3">
+                <i data-feather="wifi" class="text-green-600"></i>
+              </div>
+              <h2 class="text-xl font-bold text-gray-800">Auto Check-in</h2>
+            </div>
+            <p class="text-gray-600 mb-4">Automatically check in and out based on Wi-Fi connectivity.</p>
+            
+            <!-- Wi-Fi Status -->
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <div class="flex justify-between items-center">
+                <div>
+                  <p class="text-sm font-medium text-gray-700">Connected Wi-Fi</p>
+                  <p id="wifiName" class="text-lg font-bold text-gray-900">OfficeWiFi-5G</p>
+                </div>
+                <div id="wifiStatus" class="flex items-center space-x-1 bg-green-100 px-3 py-1 rounded-full">
+                  <i data-feather="wifi" class="text-green-600 w-4 h-4"></i>
+                  <span class="text-green-700 text-sm font-medium">Connected</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Apple-style Toggle -->
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <p class="font-medium text-gray-700">Auto Check-in Mode</p>
+                <p class="text-sm text-gray-500">Automatically check in when connected to office Wi-Fi</p>
+              </div>
+              <div class="relative inline-block w-12 align-middle select-none">
+                <input type="checkbox" id="autoMode" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-2 border-gray-300 appearance-none cursor-pointer transition-all duration-200 ease-in-out" />
+                <label for="autoMode" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer transition-all duration-200 ease-in-out"></label>
+              </div>
+            </div>
+
+            <!-- Auto Mode Status -->
+            <div id="autoModeStatus" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 hidden">
+              <div class="flex items-center">
+                <i data-feather="info" class="text-yellow-600 mr-2"></i>
+                <p class="text-yellow-800 text-sm">
+                  <span class="font-medium">Auto Mode Active:</span> 
+                  <span id="autoStatusText">System will automatically check you in/out based on Wi-Fi connectivity</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="bg-white rounded-lg shadow-sm p-6 fade-in">
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Quick Stats</h2>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 text-center">
+              <p class="text-2xl font-bold text-blue-600" id="daysWorked">18</p>
+              <p class="text-sm text-gray-600">Days Worked</p>
+            </div>
+            <div class="bg-green-50 border border-green-100 rounded-lg p-4 text-center">
+              <p class="text-2xl font-bold text-green-600" id="onTimePercentage">85%</p>
+              <p class="text-sm text-gray-600">On Time</p>
+            </div>
+            <div class="bg-yellow-50 border border-yellow-100 rounded-lg p-4 text-center">
+              <p class="text-2xl font-bold text-yellow-600" id="lateDays">3</p>
+              <p class="text-sm text-gray-600">Late Days</p>
+            </div>
+            <div class="bg-purple-50 border border-purple-100 rounded-lg p-4 text-center">
+              <p class="text-2xl font-bold text-purple-600" id="avgHours">8.5h</p>
+              <p class="text-sm text-gray-600">Avg. Hours</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-800">Staff Profile</h3>
+        <button id="closeProfileModal" class="text-gray-500 hover:text-gray-700">
+          <i data-feather="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="space-y-4">
+        <div class="flex items-center space-x-4">
+          <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center">
+            <i data-feather="user" class="text-blue-600 w-8 h-8"></i>
+          </div>
+          <div>
+            <h4 id="modalStaffName" class="font-bold text-gray-800">John Doe</h4>
+            <p id="modalStaffId" class="text-sm text-gray-500">Staff ID: PC001</p>
+            <p class="text-sm text-gray-500">Department: Engineering</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-sm text-gray-500">Email</p>
+            <p class="text-sm font-medium">john.doe@punchcard.com</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Phone</p>
+            <p class="text-sm font-medium">+1 (555) 123-4567</p>
+          </div>
+        </div>
+        <div class="pt-4 border-t border-gray-200">
+          <h5 class="text-sm font-medium text-gray-700 mb-2">Attendance Stats</h5>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-blue-50 p-2 rounded">
+              <p class="text-xs text-gray-500">This Month</p>
+              <p class="font-bold text-blue-600">18/20</p>
+            </div>
+            <div class="bg-green-50 p-2 rounded">
+              <p class="text-xs text-gray-500">On Time</p>
+              <p class="font-bold text-green-600">85%</p>
+            </div>
+            <div class="bg-yellow-50 p-2 rounded">
+              <p class="text-xs text-gray-500">Late Days</p>
+              <p class="font-bold text-yellow-600">3</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications Modal -->
+  <div id="notificationsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-800">Notifications</h3>
+        <button id="closeNotificationsModal" class="text-gray-500 hover:text-gray-700">
+          <i data-feather="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="space-y-4 max-h-96 overflow-y-auto">
+        <div class="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+          <i data-feather="info" class="text-blue-600 w-4 h-4 mt-1"></i>
+          <div>
+            <p class="text-sm font-medium text-gray-800">System Update</p>
+            <p class="text-xs text-gray-600">New features added to the dashboard</p>
+            <p class="text-xs text-gray-500 mt-1">2 hours ago</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
+          <i data-feather="alert-triangle" class="text-yellow-600 w-4 h-4 mt-1"></i>
+          <div>
+            <p class="text-sm font-medium text-gray-800">Late Check-in</p>
+            <p class="text-xs text-gray-600">You checked in 15 minutes late yesterday</p>
+            <p class="text-xs text-gray-500 mt-1">1 day ago</p>
+          </div>
+        </div>
+        <div class="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
+          <i data-feather="check-circle" class="text-green-600 w-4 h-4 mt-1"></i>
+          <div>
+            <p class="text-sm font-medium text-gray-800">Attendance Record</p>
+            <p class="text-xs text-gray-600">Your attendance for last week has been approved</p>
+            <p class="text-xs text-gray-500 mt-1">3 days ago</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports Modal -->
+  <div id="reportsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-800">Attendance Reports</h3>
+        <button id="closeReportsModal" class="text-gray-500 hover:text-gray-700">
+          <i data-feather="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <!-- Date Filter -->
+      <div class="mb-6 flex flex-wrap gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+          <input type="date" id="fromDate" class="border border-gray-300 rounded-lg p-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+          <input type="date" id="toDate" class="border border-gray-300 rounded-lg p-2 text-sm">
+        </div>
+        <div class="flex items-end">
+          <button id="filterReports" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">Filter</button>
+        </div>
+        <div class="flex items-end ml-auto">
+          <button id="exportReports" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 flex items-center">
+            <i data-feather="download" class="w-4 h-4 mr-2"></i> Export
+          </button>
+        </div>
+      </div>
+      
+      <!-- Reports Table -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Hours</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+            </tr>
+          </thead>
+          <tbody id="reportsTable" class="bg-white divide-y divide-gray-200">
+            <!-- Reports data will be populated here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Supabase
+    const supabaseUrl = 'https://rbuwscmbaxycyahrjoyv.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJidXdzY21iYXh5Y3lhaHJqb3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2NjEyODQsImV4cCI6MjA3NjIzNzI4NH0.KqB9F0QJ5vLLW5P0UBVs20pnbUcggMk1obY7ls0Z96A';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    feather.replace();
+
+    // DOM Elements
+    const checkInBtn = document.getElementById("checkInBtn");
+    const checkOutBtn = document.getElementById("checkOutBtn");
+    const clockInTime = document.getElementById("clockInTime");
+    const clockOutTime = document.getElementById("clockOutTime");
+    const totalHours = document.getElementById("totalHours");
+    const reasonBox = document.getElementById("latenessReason");
+    const autoMode = document.getElementById("autoMode");
+    const wifiStatus = document.getElementById("wifiStatus");
+    const wifiName = document.getElementById("wifiName");
+    const autoModeStatus = document.getElementById("autoModeStatus");
+    const autoStatusText = document.getElementById("autoStatusText");
+    const notificationBtn = document.getElementById("notificationBtn");
+    const notificationBadge = document.getElementById("notificationBadge");
+    const profileBtn = document.getElementById("profileBtn");
+    const profileModal = document.getElementById("profileModal");
+    const closeProfileModal = document.getElementById("closeProfileModal");
+    const notificationsModal = document.getElementById("notificationsModal");
+    const closeNotificationsModal = document.getElementById("closeNotificationsModal");
+    const reportsLink = document.getElementById("reportsLink");
+    const reportsModal = document.getElementById("reportsModal");
+    const closeReportsModal = document.getElementById("closeReportsModal");
+    const reportsTable = document.getElementById("reportsTable");
+    const fromDate = document.getElementById("fromDate");
+    const toDate = document.getElementById("toDate");
+    const filterReports = document.getElementById("filterReports");
+    const exportReports = document.getElementById("exportReports");
+    
+    // Quick Stats Elements
+    const daysWorked = document.getElementById("daysWorked");
+    const onTimePercentage = document.getElementById("onTimePercentage");
+    const lateDays = document.getElementById("lateDays");
+    const avgHours = document.getElementById("avgHours");
+
+    // Initialize data
+    let currentStaff = JSON.parse(localStorage.getItem('currentStaff')) || {
+      staffName: "Demo Staff",
+      staffId: "PC001",
+      email: "staff@punchcard.com"
+    };
+    
+    let session = JSON.parse(localStorage.getItem("staffSession")) || {
+      checkedIn: false,
+      checkInTime: null,
+      reason: "",
+      method: "manual"
+    };
+    
+    let attendanceHistory = JSON.parse(localStorage.getItem("attendanceHistory")) || [
+      {
+        date: new Date().toDateString(),
+        checkIn: "08:45",
+        checkOut: "17:30",
+        hours: "8h 45m",
+        method: "Auto",
+        reason: "Traffic delay"
+      },
+      {
+        date: new Date(Date.now() - 86400000).toDateString(),
+        checkIn: "09:00",
+        checkOut: "17:15",
+        hours: "8h 15m",
+        method: "Manual",
+        reason: ""
+      },
+      {
+        date: new Date(Date.now() - 172800000).toDateString(),
+        checkIn: "08:50",
+        checkOut: "17:45",
+        hours: "8h 55m",
+        method: "Auto",
+        reason: "Public transport issues"
+      },
+      {
+        date: new Date(Date.now() - 259200000).toDateString(),
+        checkIn: "08:55",
+        checkOut: "17:20",
+        hours: "8h 25m",
+        method: "Manual",
+        reason: ""
+      },
+      {
+        date: new Date(Date.now() - 345600000).toDateString(),
+        checkIn: "09:10",
+        checkOut: "17:40",
+        hours: "8h 30m",
+        method: "Manual",
+        reason: "Car trouble"
+      }
+    ];
+
+    // Initialize UI
+    document.getElementById("staffName").textContent = currentStaff.name || currentStaff.staffName;
+    document.getElementById("staffId").textContent = `Staff ID: ${currentStaff.staffId}`;
+    document.getElementById("modalStaffName").textContent = currentStaff.name || currentStaff.staffName;
+    document.getElementById("modalStaffId").textContent = `Staff ID: ${currentStaff.staffId}`;
+
+    if (session.checkedIn) {
+      clockInTime.textContent = formatTime(new Date(session.checkInTime));
+      checkInBtn.disabled = true;
+      checkOutBtn.disabled = false;
+    }
+
+    // Set default date values for reports
+    const today = new Date();
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+    
+    fromDate.valueAsDate = oneMonthAgo;
+    toDate.valueAsDate = today;
+
+    // Functions
+    function formatTime(date) {
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function simulateWifi() {
+      return Math.random() > 0.3; // Simulate Wi-Fi connection (70% chance)
+    }
+
+    function updateWifiStatus(connected) {
+      if (connected) {
+        wifiStatus.className = "flex items-center space-x-1 bg-green-100 px-3 py-1 rounded-full";
+        wifiStatus.innerHTML = '<i data-feather="wifi" class="text-green-600 w-4 h-4"></i><span class="text-green-700 text-sm font-medium">Connected</span>';
+        wifiName.textContent = "OfficeWiFi-5G";
+      } else {
+        wifiStatus.className = "flex items-center space-x-1 bg-red-100 px-3 py-1 rounded-full";
+        wifiStatus.innerHTML = '<i data-feather="wifi-off" class="text-red-600 w-4 h-4"></i><span class="text-red-700 text-sm font-medium">Disconnected</span>';
+        wifiName.textContent = "Not Connected";
+      }
+      feather.replace();
+    }
+
+    function saveSession(data) {
+      localStorage.setItem("staffSession", JSON.stringify(data));
+      session = data;
+    }
+
+    async function saveAttendanceRecord(record) {
+      attendanceHistory.unshift(record);
+      localStorage.setItem("attendanceHistory", JSON.stringify(attendanceHistory));
+      updateQuickStats();
+      
+      // Save to Supabase if available
+      try {
+        const { data, error } = await supabase
+          .from('attendance_records')
+          .insert([{
+            user_id: currentStaff.id || 'demo-user',
+            staff_id: currentStaff.staffId,
+            action: 'in',
+            timestamp: new Date().toISOString(),
+            method: record.method.toLowerCase(),
+            reason: record.reason,
+            hours: record.hours
+          }]);
+          
+        if (error) throw error;
+        console.log('Attendance record saved to Supabase');
+      } catch (error) {
+        console.log('Saved locally (Supabase not configured)');
+      }
+    }
+
+    function updateQuickStats() {
+      // Calculate stats from attendance history
+      const totalDays = attendanceHistory.length;
+      const lateCount = attendanceHistory.filter(r => r.reason && r.reason !== "").length;
+      const onTimeRate = Math.round(((totalDays - lateCount) / totalDays) * 100);
+      
+      // Calculate average hours
+      const totalMinutes = attendanceHistory.reduce((sum, record) => {
+        const [hours, minutes] = record.hours.split('h ');
+        return sum + (parseInt(hours) * 60) + parseInt(minutes.replace('m', ''));
+      }, 0);
+      
+      const avgMinutes = totalMinutes / totalDays;
+      const avgHoursValue = `${Math.floor(avgMinutes / 60)}h ${Math.round(avgMinutes % 60)}m`;
+      
+      // Update UI
+      daysWorked.textContent = totalDays;
+      onTimePercentage.textContent = `${onTimeRate}%`;
+      lateDays.textContent = lateCount;
+      avgHours.textContent = avgHoursValue;
+    }
+
+    function renderReports() {
+      // Filter by date if dates are selected
+      let filteredData = [...attendanceHistory];
+      
+      if (fromDate.value && toDate.value) {
+        const from = new Date(fromDate.value);
+        const to = new Date(toDate.value);
+        to.setHours(23, 59, 59, 999); // End of day
+        
+        filteredData = attendanceHistory.filter(record => {
+          const recordDate = new Date(record.date);
+          return recordDate >= from && recordDate <= to;
+        });
+      }
+      
+      reportsTable.innerHTML = filteredData
+        .map(r => `
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-sm text-gray-800">${r.date}</td>
+            <td class="px-6 py-4 text-sm text-gray-800">${r.checkIn}</td>
+            <td class="px-6 py-4 text-sm text-gray-800">${r.checkOut}</td>
+            <td class="px-6 py-4 text-sm text-gray-800">${r.hours}</td>
+            <td class="px-6 py-4 text-sm">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${r.method === 'Auto' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">
+                ${r.method}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-800">${r.reason || "—"}</td>
+          </tr>
+        `).join("");
+    }
+
+    function checkIn(method = "manual") {
+      const now = new Date();
+      clockInTime.textContent = formatTime(now);
+      checkInBtn.disabled = true;
+      checkOutBtn.disabled = false;
+      
+      // Add visual feedback
+      checkInBtn.classList.add("pulse");
+      setTimeout(() => {
+        checkInBtn.classList.remove("pulse");
+      }, 2000);
+      
+      saveSession({
+        ...session,
+        checkedIn: true,
+        checkInTime: now.toISOString(),
+        reason: reasonBox.value.trim(),
+        method: method
+      });
+      
+      // Show success notification
+      showToast(`Checked in successfully via ${method} mode!`, "success");
+    }
+
+    function checkOut() {
+      const now = new Date();
+      clockOutTime.textContent = formatTime(now);
+      const start = new Date(session.checkInTime);
+      const diff = Math.floor((now - start) / 60000);
+      const hours = `${Math.floor(diff / 60)}h ${diff % 60}m`;
+      totalHours.textContent = hours;
+
+      const record = {
+        date: now.toDateString(),
+        checkIn: formatTime(start),
+        checkOut: formatTime(now),
+        hours,
+        method: session.method === "auto" ? "Auto" : "Manual",
+        reason: session.reason,
+      };
+
+      saveAttendanceRecord(record);
+      saveSession({ ...session, checkedIn: false });
+
+      checkOutBtn.disabled = true;
+      checkInBtn.disabled = false;
+      
+      // Add visual feedback
+      checkOutBtn.classList.add("pulse");
+      setTimeout(() => {
+        checkOutBtn.classList.remove("pulse");
+      }, 2000);
+      
+      // Show success notification
+      showToast("Checked out successfully!", "success");
+      
+      // Clear reason box
+      reasonBox.value = "";
+    }
+
+    function showToast(message, type = "info") {
+      // Create toast element
+      const toast = document.createElement("div");
+      toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 fade-in ${
+        type === "success" ? "bg-green-500" : 
+        type === "error" ? "bg-red-500" : 
+        "bg-blue-500"
+      }`;
+      toast.innerHTML = `
+        <div class="flex items-center">
+          <i data-feather="${type === "success" ? "check-circle" : type === "error" ? "alert-circle" : "info"}"></i>
+          <span class="ml-2">${message}</span>
+        </div>
+      `;
+      
+      document.body.appendChild(toast);
+      feather.replace();
+      
+      // Remove toast after 3 seconds
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    // Auto Mode Toggle
+    autoMode.addEventListener("change", function() {
+      if (this.checked) {
+        autoModeStatus.classList.remove("hidden");
+        autoStatusText.textContent = "System will automatically check you in/out based on Wi-Fi connectivity";
+        
+        // Simulate initial Wi-Fi status
+        const wifiConnected = simulateWifi();
+        updateWifiStatus(wifiConnected);
+        
+        if (wifiConnected && !session.checkedIn) {
+          autoStatusText.textContent = "Wi-Fi detected - Auto checking in...";
+          setTimeout(() => {
+            checkIn("auto");
+            autoStatusText.textContent = "Checked in automatically via Wi-Fi detection";
+          }, 2000);
+        }
+      } else {
+        autoModeStatus.classList.add("hidden");
+      }
+    });
+
+    // Auto Wi-Fi check simulation
+    setInterval(() => {
+      if (autoMode.checked) {
+        const wifiConnected = simulateWifi();
+        updateWifiStatus(wifiConnected);
+        
+        if (wifiConnected && !session.checkedIn) {
+          autoStatusText.textContent = "Wi-Fi detected - Auto checking in...";
+          setTimeout(() => {
+            checkIn("auto");
+            autoStatusText.textContent = "Checked in automatically via Wi-Fi detection";
+          }, 2000);
+        } else if (!wifiConnected && session.checkedIn && session.method === "auto") {
+          autoStatusText.textContent = "Wi-Fi disconnected - Auto checking out...";
+          setTimeout(() => {
+            checkOut();
+            autoStatusText.textContent = "Checked out automatically due to Wi-Fi disconnection";
+          }, 2000);
+        }
+      }
+    }, 15000); // Check every 15 seconds
+
+    // Event Listeners
+    checkInBtn.addEventListener("click", () => checkIn("manual"));
+    checkOutBtn.addEventListener("click", checkOut);
+
+    // Modal Controls
+    profileBtn.addEventListener("click", () => {
+      profileModal.classList.remove("hidden");
+    });
+    
+    closeProfileModal.addEventListener("click", () => {
+      profileModal.classList.add("hidden");
+    });
+    
+    notificationBtn.addEventListener("click", () => {
+      notificationsModal.classList.remove("hidden");
+      notificationBadge.classList.add("hidden");
+    });
+    
+    closeNotificationsModal.addEventListener("click", () => {
+      notificationsModal.classList.add("hidden");
+    });
+    
+    reportsLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      reportsModal.classList.remove("hidden");
+      renderReports();
+    });
+    
+    closeReportsModal.addEventListener("click", () => {
+      reportsModal.classList.add("hidden");
+    });
+    
+    filterReports.addEventListener("click", () => {
+      renderReports();
+    });
+    
+    exportReports.addEventListener("click", () => {
+      showToast("Exporting attendance report...", "info");
+      // In a real app, this would generate and download a CSV/PDF file
+      setTimeout(() => {
+        showToast("Report exported successfully!", "success");
+      }, 1500);
+    });
+
+    // Close modals when clicking outside
+    window.addEventListener("click", (e) => {
+      if (e.target === profileModal) {
+        profileModal.classList.add("hidden");
+      }
+      if (e.target === notificationsModal) {
+        notificationsModal.classList.add("hidden");
+      }
+      if (e.target === reportsModal) {
+        reportsModal.classList.add("hidden");
+      }
+    });
+
+    // Load initial data
+    updateQuickStats();
+    
+    // Show notification badge
+    notificationBadge.classList.remove("hidden");
+  </script>
+</body>
+</html>
