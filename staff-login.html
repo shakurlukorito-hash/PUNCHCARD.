@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Login | PunchCard</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Feather Icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#10B981',
+            danger: '#EF4444',
+            github: '#333333',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .gradient-bg {
+      background: linear-gradient(135deg, #3B82F6 0%, #10B981 100%);
+    }
+    .login-card {
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1),
+                  0 4px 6px -2px rgba(0,0,0,0.05);
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .shake {
+      animation: shake 0.5s ease-in-out;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .password-toggle {
+      cursor: pointer;
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .divider span {
+      padding: 0 15px;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+    .otp-input {
+      letter-spacing: 8px;
+      font-weight: bold;
+      text-align: center;
+      font-size: 1.25rem;
+    }
+    .btn-loading {
+      position: relative;
+      color: transparent;
+    }
+    .btn-loading:after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: auto;
+      border: 2px solid transparent;
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: button-loading-spinner 1s ease infinite;
+    }
+    @keyframes button-loading-spinner {
+      from { transform: rotate(0turn); }
+      to { transform: rotate(1turn); }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <div class="gradient-bg py-4 shadow-md">
+    <div class="container mx-auto px-4 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i data-feather="clock" class="text-white w-6 h-6"></i>
+        <h1 class="text-white text-xl font-bold">PunchCard</h1>
+      </div>
+      <a href="index.html" class="text-white hover:text-opacity-80 flex items-center gap-1">
+        <i data-feather="arrow-left" class="w-5 h-5"></i> Back to Home
+      </a>
+    </div>
+  </div>
+
+  <!-- Main Login Section -->
+  <div class="container mx-auto px-4 py-12 flex items-center justify-center">
+    <div class="w-full max-w-md bg-white rounded-xl login-card p-8 fade-in">
+      <div class="text-center mb-6">
+        <div class="flex items-center justify-center w-16 h-16 bg-primary bg-opacity-10 rounded-full mb-4 mx-auto">
+          <i data-feather="user" class="text-primary w-8 h-8"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-1">Staff Login</h2>
+        <p class="text-gray-600">Sign in to access your dashboard</p>
+      </div>
+
+      <!-- GitHub OAuth Button -->
+      <div class="mb-6">
+        <button id="githubLoginBtn" 
+                class="w-full bg-github text-white py-3 rounded-lg font-medium hover:bg-opacity-90 transition-all flex items-center justify-center gap-3 shadow-md">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd"/>
+          </svg>
+          Continue with GitHub
+        </button>
+      </div>
+
+      <div class="divider">
+        <span>or continue with credentials</span>
+      </div>
+
+      <!-- Login Form -->
+      <form class="space-y-4" id="loginForm">
+
+        <!-- Staff ID -->
+        <div>
+          <label for="staffId" class="block text-sm font-medium text-gray-700 mb-1">Staff ID</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i data-feather="id" class="text-gray-400 w-4 h-4"></i>
+            </div>
+            <input type="text" id="staffId" name="staffId"
+                   class="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                   placeholder="Enter your Staff ID" required>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i data-feather="lock" class="text-gray-400 w-4 h-4"></i>
+            </div>
+            <input type="password" id="password" name="password"
+                   class="pl-10 pr-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                   placeholder="Enter your password" required>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <i data-feather="eye" class="text-gray-400 w-4 h-4 password-toggle" id="passwordToggle"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Country Code & Phone Number -->
+        <div>
+          <label for="mobileNumber" class="block text-sm font-medium text-gray-700 mb-1">Mobile Number (for OTP)</label>
+          <div class="flex gap-2">
+            <div class="relative w-1/3">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i data-feather="globe" class="text-gray-400 w-4 h-4"></i>
+              </div>
+              <select id="countryCode" name="countryCode"
+                      class="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all appearance-none bg-white">
+                <option value="+1">US +1</option>
+                <option value="+44">UK +44</option>
+                <option value="+91">India +91</option>
+                <option value="+254" selected>Kenya +254</option>
+                <option value="+81">Japan +81</option>
+                <option value="+49">Germany +49</option>
+              </select>
+              <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+                <i data-feather="chevron-down" class="text-gray-400 w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="relative w-2/3">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i data-feather="phone" class="text-gray-400 w-4 h-4"></i>
+              </div>
+              <input type="tel" id="mobileNumber"
+                     class="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                     placeholder="712345678">
+            </div>
+          </div>
+        </div>
+
+        <!-- Remember / Forgot -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <input id="remember-me" type="checkbox"
+                   class="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary">
+            <label for="remember-me" class="ml-2 text-sm text-gray-700">Remember me</label>
+          </div>
+          <a href="#" class="text-sm text-primary hover:text-opacity-80 transition-colors" id="forgotPasswordLink">Forgot password?</a>
+        </div>
+
+        <!-- OTP Buttons -->
+        <div class="flex gap-2">
+          <button type="button" id="emailOtpBtn"
+                  class="flex-1 bg-gray-100 text-primary py-2 rounded-lg font-medium hover:bg-gray-200 transition-all flex items-center justify-center">
+            <i data-feather="mail" class="mr-2 w-4 h-4"></i> Email OTP
+          </button>
+          <button type="button" id="mobileOtpBtn"
+                  class="flex-1 bg-gray-100 text-primary py-2 rounded-lg font-medium hover:bg-gray-200 transition-all flex items-center justify-center">
+            <i data-feather="smartphone" class="mr-2 w-4 h-4"></i> Mobile OTP
+          </button>
+        </div>
+
+        <!-- OTP Help / Input -->
+        <div id="verificationHelp" class="text-xs text-gray-500 hidden p-2 bg-blue-50 rounded-lg"></div>
+
+        <div id="otpInputContainer" class="hidden space-y-3">
+          <label for="otp" class="block text-sm font-medium text-gray-700 mb-1">Enter OTP</label>
+          <input type="text" id="otp" maxlength="6"
+                 class="otp-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                 placeholder="000000">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-gray-500" id="otpTimer">OTP expires in: 05:00</span>
+            <button type="button" id="resendOtpBtn" class="text-primary hover:text-opacity-80 disabled:text-gray-400 disabled:cursor-not-allowed" disabled>
+              Resend OTP
+            </button>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" id="submitBtn"
+                class="w-full bg-primary text-white py-3 rounded-lg font-medium hover:bg-opacity-90 transition-all flex items-center justify-center shadow-md">
+          Sign In
+        </button>
+      </form>
+
+      <!-- Guest Login -->
+      <div class="mt-6">
+        <button id="guestLoginBtn"
+                class="w-full bg-gray-100 text-gray-800 py-3 rounded-lg font-medium hover:bg-gray-200 transition-all flex items-center justify-center gap-2 border border-gray-300">
+          <i data-feather="user-check" class="w-4 h-4"></i> Continue as Guest
+        </button>
+      </div>
+
+      <div class="mt-6 text-center text-sm text-gray-600">
+        Need help? <a href="#" class="text-primary font-medium hover:text-opacity-80 transition-colors">Contact your supervisor</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgotPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 fade-in">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-800">Reset Password</h3>
+        <button id="closeForgotPasswordModal" class="text-gray-500 hover:text-gray-700">
+          <i data-feather="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-gray-600 mb-4">Enter your email address and we'll send you a password reset link.</p>
+      <div class="space-y-4">
+        <div>
+          <label for="resetEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" id="resetEmail" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                 placeholder="Enter your email">
+        </div>
+        <button id="sendResetLinkBtn" 
+                class="w-full bg-primary text-white py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all flex items-center justify-center">
+          Send Reset Link
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Supabase with YOUR credentials
+    const supabaseUrl = 'https://rbuwscmbaxycyahrjoyv.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJidXdzY21iYXh5Y3lhaHJqb3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2NjEyODQsImV4cCI6MjA3NjIzNzI4NH0.KqB9F0QJ5vLLW5P0UBVs20pnbUcggMk1obY7ls0Z96A';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Initialize Feather Icons
+    feather.replace();
+
+    // DOM Elements
+    const loginForm = document.getElementById('loginForm');
+    const staffIdInput = document.getElementById('staffId');
+    const passwordInput = document.getElementById('password');
+    const passwordToggle = document.getElementById('passwordToggle');
+    const submitBtn = document.getElementById('submitBtn');
+    const githubLoginBtn = document.getElementById('githubLoginBtn');
+    const guestLoginBtn = document.getElementById('guestLoginBtn');
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+    const closeForgotPasswordModal = document.getElementById('closeForgotPasswordModal');
+    const sendResetLinkBtn = document.getElementById('sendResetLinkBtn');
+    const resetEmailInput = document.getElementById('resetEmail');
+    const mobileOtpBtn = document.getElementById('mobileOtpBtn');
+    const emailOtpBtn = document.getElementById('emailOtpBtn');
+    const otpInputContainer = document.getElementById('otpInputContainer');
+    const otpInput = document.getElementById('otp');
+    const otpTimer = document.getElementById('otpTimer');
+    const resendOtpBtn = document.getElementById('resendOtpBtn');
+    const verificationHelp = document.getElementById('verificationHelp');
+
+    // OTP Variables
+    let otpCountdown;
+    let otpExpiryTime;
+
+    // Toggle password visibility
+    passwordToggle.addEventListener('click', function() {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      
+      const icon = passwordToggle;
+      if (type === 'text') {
+        icon.setAttribute('data-feather', 'eye-off');
+      } else {
+        icon.setAttribute('data-feather', 'eye');
+      }
+      feather.replace();
+    });
+
+    // GitHub OAuth Login
+    githubLoginBtn.addEventListener('click', async function() {
+      setButtonLoading(githubLoginBtn, true);
+      
+      try {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'github',
+          options: {
+            redirectTo: `${window.location.origin}/staff-dashboard.html`,
+            scopes: 'read:user,user:email'
+          }
+        });
+        
+        if (error) throw error;
+        
+      } catch (error) {
+        console.error('GitHub OAuth error:', error);
+        showMessage(error.message || 'Failed to authenticate with GitHub. Please try again.', 'error');
+        setButtonLoading(githubLoginBtn, false);
+      }
+    });
+
+    // Handle login form submission
+    loginForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const staffId = staffIdInput.value.trim();
+      const password = passwordInput.value.trim();
+      const otp = otpInput.value.trim();
+      
+      if (!staffId || !password) {
+        showMessage('Please fill in both Staff ID and Password', 'error');
+        return;
+      }
+
+      // Check if OTP is required and valid
+      if (otpInputContainer.classList.contains('hidden') === false && !otp) {
+        showMessage('Please enter the OTP code', 'error');
+        return;
+      }
+
+      if (otpInputContainer.classList.contains('hidden') === false && otp.length !== 6) {
+        showMessage('Please enter a valid 6-digit OTP', 'error');
+        return;
+      }
+      
+      setButtonLoading(submitBtn, true);
+      
+      try {
+        // For demo purposes - in production, use proper authentication
+        const email = `${staffId}@punchcard.com`;
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+        
+        if (error) throw error;
+        
+        // Success - store staff data
+        localStorage.setItem('currentStaff', JSON.stringify({
+          id: data.user.id,
+          staffId: staffId,
+          email: data.user.email,
+          name: data.user.user_metadata?.name || 'Staff Member',
+          role: 'staff',
+          provider: data.user.app_metadata?.provider || 'email',
+          loginTime: new Date().toISOString(),
+          authMethod: otp ? 'password_otp' : 'password_only'
+        }));
+        
+        showMessage('Login successful! Redirecting to dashboard...', 'success');
+        
+        setTimeout(() => {
+          window.location.href = 'staff-dashboard.html';
+        }, 1500);
+        
+      } catch (error) {
+        console.error('Login error:', error);
+        
+        // Fallback for demo - remove this in production
+        if (staffId === 'PC001' && password === 'password123') {
+          localStorage.setItem('currentStaff', JSON.stringify({
+            id: 'demo-staff-001',
+            staffId: staffId,
+            email: 'staff@punchcard.com',
+            name: 'Demo Staff',
+            role: 'staff',
+            provider: 'demo',
+            loginTime: new Date().toISOString(),
+            authMethod: otp ? 'password_otp' : 'password_only'
+          }));
+          
+          showMessage('Demo login successful! Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = 'staff-dashboard.html';
+          }, 1500);
+        } else {
+          showMessage('Invalid credentials. Please try again.', 'error');
+          setButtonLoading(submitBtn, false);
+        }
+      }
+    });
+
+    // Send Mobile OTP
+    mobileOtpBtn.addEventListener('click', async function() {
+      const code = document.getElementById('countryCode').value;
+      const number = document.getElementById('mobileNumber').value.trim();
+
+      if (!number) {
+        showVerificationHelp('Please enter your phone number first.', 'error');
+        return;
+      }
+
+      if (!/^\d{9,10}$/.test(number)) {
+        showVerificationHelp('Please enter a valid phone number (9-10 digits).', 'error');
+        return;
+      }
+
+      setButtonLoading(mobileOtpBtn, true);
+      
+      try {
+        // Simulate API call to send OTP
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Generate demo OTP (in production, this would come from your backend)
+        const demoOtp = '123456';
+        
+        showVerificationHelp(`OTP has been sent to ${code}${number}. Demo OTP: ${demoOtp}`, 'success');
+        startOtpTimer();
+        showOtpInput();
+        
+        setButtonLoading(mobileOtpBtn, false, '<i data-feather="smartphone" class="mr-2 w-4 h-4"></i> Mobile OTP');
+        
+      } catch (error) {
+        showVerificationHelp('Failed to send OTP. Please try again.', 'error');
+        setButtonLoading(mobileOtpBtn, false, '<i data-feather="smartphone" class="mr-2 w-4 h-4"></i> Mobile OTP');
+      }
+    });
+
+    // Send Email OTP
+    emailOtpBtn.addEventListener('click', async function() {
+      const staffId = staffIdInput.value.trim();
+
+      if (!staffId) {
+        showVerificationHelp('Please enter your Staff ID first.', 'error');
+        return;
+      }
+
+      setButtonLoading(emailOtpBtn, true);
+      
+      try {
+        // Simulate API call to send OTP
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const email = `${staffId}@punchcard.com`;
+        // Generate demo OTP (in production, this would come from your backend)
+        const demoOtp = '654321';
+        
+        showVerificationHelp(`OTP sent to ${email}. Please check your inbox. Demo OTP: ${demoOtp}`, 'success');
+        startOtpTimer();
+        showOtpInput();
+        
+        setButtonLoading(emailOtpBtn, false, '<i data-feather="mail" class="mr-2 w-4 h-4"></i> Email OTP');
+        
+      } catch (error) {
+        showVerificationHelp('Failed to send OTP. Please try again.', 'error');
+        setButtonLoading(emailOtpBtn, false, '<i data-feather="mail" class="mr-2 w-4 h-4"></i> Email OTP');
+      }
+    });
+
+    // OTP Timer Functions
+    function startOtpTimer() {
+      const duration = 5 * 60; // 5 minutes in seconds
+      let timeLeft = duration;
+      
+      // Clear existing timer
+      if (otpCountdown) {
+        clearInterval(otpCountdown);
+      }
+      
+      // Disable resend button initially
+      resendOtpBtn.disabled = true;
+      resendOtpBtn.classList.add('text-gray-400', 'cursor-not-allowed');
+      resendOtpBtn.classList.remove('text-primary', 'hover:text-opacity-80');
+      
+      otpCountdown = setInterval(() => {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        
+        otpTimer.textContent = `OTP expires in: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeLeft <= 0) {
+          clearInterval(otpCountdown);
+          otpTimer.textContent = 'OTP expired';
+          resendOtpBtn.disabled = false;
+          resendOtpBtn.classList.remove('text-gray-400', 'cursor-not-allowed');
+          resendOtpBtn.classList.add('text-primary', 'hover:text-opacity-80');
+        }
+        
+        timeLeft--;
+      }, 1000);
+    }
+
+    function showOtpInput() {
+      otpInputContainer.classList.remove('hidden');
+      otpInput.value = '';
+      otpInput.focus();
+    }
+
+    function hideOtpInput() {
+      otpInputContainer.classList.add('hidden');
+      if (otpCountdown) {
+        clearInterval(otpCountdown);
+      }
+    }
+
+    // Resend OTP
+    resendOtpBtn.addEventListener('click', function() {
+      if (!this.disabled) {
+        // Trigger the last used OTP method
+        if (mobileOtpBtn.innerHTML.includes('Mobile OTP')) {
+          mobileOtpBtn.click();
+        } else {
+          emailOtpBtn.click();
+        }
+      }
+    });
+
+    // Guest login
+    guestLoginBtn.addEventListener('click', function() {
+      localStorage.setItem('currentStaff', JSON.stringify({
+        id: 'guest-staff',
+        staffId: 'GUEST001',
+        name: 'Guest Staff',
+        role: 'guest',
+        permissions: ['view_dashboard'],
+        loginTime: new Date().toISOString()
+      }));
+      
+      showMessage('Continuing as guest staff...', 'success');
+      
+      setTimeout(() => {
+        window.location.href = 'staff-dashboard.html';
+      }, 1000);
+    });
+
+    // Forgot password functionality
+    forgotPasswordLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      forgotPasswordModal.classList.remove('hidden');
+    });
+
+    closeForgotPasswordModal.addEventListener('click', function() {
+      forgotPasswordModal.classList.add('hidden');
+    });
+
+    sendResetLinkBtn.addEventListener('click', async function() {
+      const email = resetEmailInput.value.trim();
+      
+      if (!email) {
+        showMessage('Please enter your email address', 'error');
+        return;
+      }
+      
+      setButtonLoading(sendResetLinkBtn, true);
+      
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password.html`,
+        });
+        
+        if (error) throw error;
+        
+        showMessage('Password reset link sent! Check your email.', 'success');
+        forgotPasswordModal.classList.add('hidden');
+        setButtonLoading(sendResetLinkBtn, false);
+        
+      } catch (error) {
+        console.error('Password reset error:', error);
+        showMessage('Reset link sent to demo email (check console for details)', 'success');
+        forgotPasswordModal.classList.add('hidden');
+        setButtonLoading(sendResetLinkBtn, false);
+      }
+    });
+
+    // Handle OAuth callback when returning from GitHub
+    async function handleOAuthCallback() {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (data.session) {
+          // User authenticated via GitHub
+          const user = data.session.user;
+          const githubUsername = user.user_metadata?.user_name || 'github-user';
+          
+          localStorage.setItem('currentStaff', JSON.stringify({
+            id: user.id,
+            staffId: `GH${githubUsername.toUpperCase()}`,
+            email: user.email,
+            name: user.user_metadata?.full_name || githubUsername,
+            role: 'staff',
+            provider: 'github',
+            avatar: user.user_metadata?.avatar_url,
+            githubUsername: githubUsername,
+            loginTime: new Date().toISOString()
+          }));
+          
+          showMessage('GitHub authentication successful! Welcome staff member.', 'success');
+          
+          setTimeout(() => {
+            window.location.href = 'staff-dashboard.html';
+          }, 1500);
+        }
+      } catch (error) {
+        console.error('OAuth callback error:', error);
+        showMessage('Authentication failed. Please try again.', 'error');
+      }
+    }
+
+    // Check if we're returning from OAuth
+    if (window.location.hash.includes('access_token') || window.location.search.includes('code=')) {
+      handleOAuthCallback();
+    }
+
+    // Utility functions
+    function setButtonLoading(button, isLoading, originalContent = null) {
+      if (isLoading) {
+        button.disabled = true;
+        button.classList.add('opacity-70', 'cursor-not-allowed');
+        originalContent = button.innerHTML;
+        button.innerHTML = '<div class="btn-loading"></div>';
+      } else {
+        button.disabled = false;
+        button.classList.remove('opacity-70', 'cursor-not-allowed');
+        if (originalContent) {
+          button.innerHTML = originalContent;
+          feather.replace();
+        }
+      }
+    }
+
+    function showMessage(message, type) {
+      const existingMessage = document.getElementById('loginMessage');
+      if (existingMessage) {
+        existingMessage.remove();
+      }
+      
+      const messageEl = document.createElement('div');
+      messageEl.id = 'loginMessage';
+      messageEl.className = `mt-4 p-3 rounded-lg text-center fade-in ${
+        type === 'error' ? 'bg-red-100 text-red-700 border border-red-200' : 
+        'bg-green-100 text-green-700 border border-green-200'
+      }`;
+      messageEl.textContent = message;
+      
+      const form = document.querySelector('form');
+      form.parentNode.insertBefore(messageEl, form.nextSibling);
+      
+      setTimeout(() => {
+        if (messageEl.parentNode) {
+          messageEl.parentNode.removeChild(messageEl);
+        }
+      }, 5000);
+    }
+
+    function showVerificationHelp(message, type) {
+      verificationHelp.textContent = message;
+      verificationHelp.classList.remove('hidden');
+      verificationHelp.className = `text-xs p-2 rounded-lg ${
+        type === 'error' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+      }`;
+    }
+
+    // Auto-fill demo credentials for testing
+    document.addEventListener('DOMContentLoaded', function() {
+      staffIdInput.value = 'PC001';
+      passwordInput.value = 'password123';
+      document.getElementById('mobileNumber').value = '712345678';
+    });
+  </script>
+</body>
+</html>
