@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PunchCard | Modern Attendance Tracking</title>
+  
+  <!-- Google Fonts - Poppins as substitute for PunchCard -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Feather Icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+  
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'punchcard': ['Poppins', 'sans-serif'], // Substitute for PunchCard
+          },
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#10B981',
+            accent: '#8B5CF6',
+            dark: '#1F2937',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+            'slide-up': 'slideUp 0.5s ease-out',
+            'pulse-slow': 'pulse 3s infinite',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            }
+          }
+        },
+      },
+    };
+  </script>
+
+  <!-- Custom Styles -->
+  <style>
+    /* Apply PunchCard font family */
+    body {
+      font-family: 'Poppins', sans-serif; /* Substitute for PunchCard */
+    }
+    
+    .gradient-bg {
+      background: linear-gradient(135deg, #3B82F6 0%, #10B981 100%);
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                  0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    .transition-all {
+      transition: all 0.3s ease;
+    }
+    .btn-loading {
+      position: relative;
+      color: transparent;
+    }
+    .btn-loading:after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: auto;
+      border: 2px solid transparent;
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: button-loading-spinner 1s ease infinite;
+    }
+    @keyframes button-loading-spinner {
+      from { transform: rotate(0turn); }
+      to { transform: rotate(1turn); }
+    }
+    
+    /* Geometric design elements */
+    .geometric-shape {
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    }
+    
+    .geometric-border {
+      border-radius: 0;
+    }
+    
+    /* Focus styles for accessibility */
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible {
+      outline: 2px solid #3B82F6;
+      outline-offset: 2px;
+    }
+    
+    /* Improved form validation styles */
+    .input-error {
+      border-color: #EF4444;
+    }
+    
+    .error-message {
+      color: #EF4444;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+    
+    /* Toast notification styles */
+    .toast {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      padding: 1rem 1.5rem;
+      border-radius: 0.5rem;
+      color: white;
+      z-index: 100;
+      transform: translateX(150%);
+      transition: transform 0.3s ease;
+    }
+    
+    .toast.show {
+      transform: translateX(0);
+    }
+    
+    .toast.success {
+      background-color: #10B981;
+    }
+    
+    .toast.error {
+      background-color: #EF4444;
+    }
+    
+    /* Skip link for accessibility */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: #3B82F6;
+      color: white;
+      padding: 8px;
+      z-index: 100;
+      text-decoration: none;
+    }
+    
+    .skip-link:focus {
+      top: 6px;
+    }
+    
+    /* Geometric typography enhancements */
+    .geometric-heading {
+      letter-spacing: -0.025em;
+    }
+    
+    .geometric-subheading {
+      letter-spacing: 0.025em;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen font-punchcard">
+  <!-- Skip link for keyboard users -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <!-- Toast notification container -->
+  <div id="toast-container"></div>
+
+  <!-- Header -->
+  <header class="gradient-bg py-4 shadow-md sticky top-0 z-10">
+    <div class="container mx-auto px-4 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <div class="geometric-shape bg-white w-8 h-8 flex items-center justify-center">
+          <i data-feather="clock" class="text-primary w-5 h-5" aria-hidden="true"></i>
+        </div>
+        <h1 class="text-white text-2xl font-bold geometric-heading">PunchCard</h1>
+      </div>
+      <nav class="hidden md:flex space-x-6" aria-label="Main navigation">
+        <a href="#features" class="text-white hover:text-gray-200 transition-all font-medium">Features</a>
+        <a href="#testimonials" class="text-white hover:text-gray-200 transition-all font-medium">Testimonials</a>
+        <a href="#pricing" class="text-white hover:text-gray-200 transition-all font-medium">Pricing</a>
+        <a href="#contact" class="text-white hover:text-gray-200 transition-all font-medium">Contact</a>
+      </nav>
+      <button class="md:hidden text-white" id="mobile-menu-button" aria-label="Toggle mobile menu" aria-expanded="false" aria-controls="mobile-menu">
+        <i data-feather="menu" class="w-6 h-6" aria-hidden="true"></i>
+      </button>
+    </div>
+    
+    <!-- Mobile Menu -->
+    <div class="md:hidden hidden bg-blue-600 py-2 px-4" id="mobile-menu" role="menu">
+      <div class="flex flex-col space-y-3">
+        <a href="#features" class="text-white hover:text-gray-200 transition-all font-medium" role="menuitem">Features</a>
+        <a href="#testimonials" class="text-white hover:text-gray-200 transition-all font-medium" role="menuitem">Testimonials</a>
+        <a href="#pricing" class="text-white hover:text-gray-200 transition-all font-medium" role="menuitem">Pricing</a>
+        <a href="#contact" class="text-white hover:text-gray-200 transition-all font-medium" role="menuitem">Contact</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main id="main-content" class="container mx-auto px-4 py-12">
+    <div class="text-center mb-12 animate-fade-in">
+      <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4 geometric-heading">Modern Attendance Tracking</h2>
+      <p class="text-gray-600 max-w-2xl mx-auto text-lg geometric-subheading">
+        Streamline your workforce management with powerful tracking tools for staff and supervisors
+      </p>
+      <div class="mt-8 flex justify-center space-x-4">
+        <button class="bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-all flex items-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 geometric-border">
+          <i data-feather="play-circle" class="w-5 h-5 mr-2" aria-hidden="true"></i>
+          Watch Demo
+        </button>
+        <button class="border border-primary text-primary px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 geometric-border">
+          Learn More
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto mb-16">
+      <div class="bg-white p-4 rounded-lg shadow-sm text-center geometric-border">
+        <div class="text-2xl font-bold text-primary">98%</div>
+        <div class="text-gray-600 text-sm">Accuracy Rate</div>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow-sm text-center geometric-border">
+        <div class="text-2xl font-bold text-primary">500+</div>
+        <div class="text-gray-600 text-sm">Companies</div>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow-sm text-center geometric-border">
+        <div class="text-2xl font-bold text-primary">50K+</div>
+        <div class="text-gray-600 text-sm">Active Users</div>
+      </div>
+      <div class="bg-white p-4 rounded-lg shadow-sm text-center geometric-border">
+        <div class="text-2xl font-bold text-primary">24/7</div>
+        <div class="text-gray-600 text-sm">Support</div>
+      </div>
+    </div>
+
+    <!-- Login Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto animate-slide-up">
+      <div class="bg-white rounded-xl shadow-md p-6 transition-all card-hover relative overflow-hidden geometric-border">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-primary bg-opacity-5 geometric-shape -mr-12 -mt-12" aria-hidden="true"></div>
+        <div class="flex items-center justify-center w-16 h-16 bg-primary bg-opacity-10 rounded-full mb-4 mx-auto">
+          <i data-feather="user" class="text-primary w-8 h-8" aria-hidden="true"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-center text-gray-800 mb-2 geometric-heading">Staff Portal</h3>
+        <p class="text-gray-600 text-center mb-6 geometric-subheading">
+          Clock in/out, view your schedule and attendance records
+        </p>
+        <button class="w-full bg-primary text-white py-3 rounded-lg font-medium hover:bg-opacity-90 transition-all flex justify-center items-center login-btn focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 geometric-border" data-portal="staff">
+          Staff Login
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-md p-6 transition-all card-hover relative overflow-hidden geometric-border">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-secondary bg-opacity-5 geometric-shape -mr-12 -mt-12" aria-hidden="true"></div>
+        <div class="flex items-center justify-center w-16 h-16 bg-secondary bg-opacity-10 rounded-full mb-4 mx-auto">
+          <i data-feather="users" class="text-secondary w-8 h-8" aria-hidden="true"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-center text-gray-800 mb-2 geometric-heading">Supervisor Portal</h3>
+        <p class="text-gray-600 text-center mb-6 geometric-subheading">
+          Manage team attendance, generate reports and approve requests
+        </p>
+        <button class="w-full bg-secondary text-white py-3 rounded-lg font-medium hover:bg-opacity-90 transition-all flex justify-center items-center login-btn focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 geometric-border" data-portal="supervisor">
+          Supervisor Login
+        </button>
+      </div>
+    </section>
+
+    <!-- Demo Dashboard Preview -->
+    <section class="mt-20 bg-white rounded-2xl shadow-lg p-6 max-w-6xl mx-auto geometric-border">
+      <h2 class="text-2xl font-bold text-center text-gray-800 mb-2 geometric-heading">Dashboard Preview</h2>
+      <p class="text-gray-600 text-center mb-8 max-w-2xl mx-auto geometric-subheading">
+        Get a glimpse of the powerful analytics and reporting features available to supervisors
+      </p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-gray-50 p-4 rounded-lg geometric-border">
+          <h3 class="font-medium text-gray-800 mb-4 geometric-heading">Attendance Overview</h3>
+          <div class="h-64">
+            <canvas id="attendanceChart" aria-label="Attendance chart showing present, late, and absent employees by day" role="img"></canvas>
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 p-4 rounded-lg geometric-border">
+          <h3 class="font-medium text-gray-800 mb-4 geometric-heading">Team Performance</h3>
+          <div class="space-y-4">
+            <div class="flex justify-between items-center">
+              <span class="text-gray-700">On Time</span>
+              <div class="w-1/2 bg-gray-200 rounded-full h-2.5 geometric-border">
+                <div class="bg-green-500 h-2.5 rounded-full geometric-border" style="width: 85%" aria-label="85% on time"></div>
+              </div>
+              <span class="text-gray-700 font-medium">85%</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-700">Late Arrivals</span>
+              <div class="w-1/2 bg-gray-200 rounded-full h-2.5 geometric-border">
+                <div class="bg-yellow-500 h-2.5 rounded-full geometric-border" style="width: 10%" aria-label="10% late arrivals"></div>
+              </div>
+              <span class="text-gray-700 font-medium">10%</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-700">Absences</span>
+              <div class="w-1/2 bg-gray-200 rounded-full h-2.5 geometric-border">
+                <div class="bg-red-500 h-2.5 rounded-full geometric-border" style="width: 5%" aria-label="5% absences"></div>
+              </div>
+              <span class="text-gray-700 font-medium">5%</span>
+            </div>
+          </div>
+          
+          <div class="mt-6 pt-4 border-t border-gray-200">
+            <h4 class="font-medium text-gray-800 mb-2 geometric-heading">Recent Activity</h4>
+            <div class="space-y-3">
+              <div class="flex items-center">
+                <div class="w-2 h-2 bg-green-500 rounded-full mr-3" aria-hidden="true"></div>
+                <span class="text-sm text-gray-600">John D. checked in at 8:58 AM</span>
+              </div>
+              <div class="flex items-center">
+                <div class="w-2 h-2 bg-yellow-500 rounded-full mr-3" aria-hidden="true"></div>
+                <span class="text-sm text-gray-600">Sarah M. checked in at 9:15 AM</span>
+              </div>
+              <div class="flex items-center">
+                <div class="w-2 h-2 bg-red-500 rounded-full mr-3" aria-hidden="true"></div>
+                <span class="text-sm text-gray-600">Mike R. is absent today</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="mt-20">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-2 geometric-heading">Powerful Features</h2>
+      <p class="text-gray-600 text-center mb-12 max-w-2xl mx-auto geometric-subheading">
+        Everything you need to efficiently manage employee attendance and productivity
+      </p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md geometric-border">
+          <div class="flex items-center mb-4">
+            <div class="bg-primary bg-opacity-10 p-2 rounded-lg mr-3 geometric-border">
+              <i data-feather="check-circle" class="text-primary w-5 h-5" aria-hidden="true"></i>
+            </div>
+            <h3 class="font-medium text-gray-800 geometric-heading">Real-time Tracking</h3>
+          </div>
+          <p class="text-gray-600 text-sm geometric-subheading">
+            Monitor attendance in real-time with instant notifications and live status updates for your entire team.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md geometric-border">
+          <div class="flex items-center mb-4">
+            <div class="bg-primary bg-opacity-10 p-2 rounded-lg mr-3 geometric-border">
+              <i data-feather="bar-chart-2" class="text-primary w-5 h-5" aria-hidden="true"></i>
+            </div>
+            <h3 class="font-medium text-gray-800 geometric-heading">Detailed Reports</h3>
+          </div>
+          <p class="text-gray-600 text-sm geometric-subheading">
+            Generate comprehensive reports for payroll, compliance, and performance analysis with customizable filters.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md geometric-border">
+          <div class="flex items-center mb-4">
+            <div class="bg-primary bg-opacity-10 p-2 rounded-lg mr-3 geometric-border">
+              <i data-feather="smartphone" class="text-primary w-5 h-5" aria-hidden="true"></i>
+            </div>
+            <h3 class="font-medium text-gray-800 geometric-heading">Mobile Friendly</h3>
+          </div>
+          <p class="text-gray-600 text-sm geometric-subheading">
+            Access the system from any device, anywhere with our responsive design and dedicated mobile app.
+          </p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md geometric-border">
+          <div class="flex items-center mb-4">
+            <div class="bg-accent bg-opacity-10 p-2 rounded-lg mr-3 geometric-border">
+              <i data-feather="shield" class="text-accent w-5 h-5" aria-hidden="true"></i>
+            </div>
+            <h3 class="font-medium text-gray-800 geometric-heading">Secure & Compliant</h3>
+          </div>
+          <p class="text-gray-600 text-sm geometric-subheading">
+            Enterprise-grade security with data encryption and compliance with labor regulations and privacy laws.
+          </p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md geometric-border">
+          <div class="flex items-center mb-4">
+            <div class="bg-accent bg-opacity-10 p-2 rounded-lg mr-3 geometric-border">
+              <i data-feather="zap" class="text-accent w-5 h-5" aria-hidden="true"></i>
+            </div>
+            <h3 class="font-medium text-gray-800 geometric-heading">Automated Alerts</h3>
+          </div>
+          <p class="text-gray-600 text-sm geometric-subheading">
+            Set up custom alerts for late arrivals, early departures, overtime, and other attendance patterns.
+          </p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all hover:shadow-md geometric-border">
+          <div class="flex items-center mb-4">
+            <div class="bg-accent bg-opacity-10 p-2 rounded-lg mr-3 geometric-border">
+              <i data-feather="refresh-cw" class="text-accent w-5 h-5" aria-hidden="true"></i>
+            </div>
+            <h3 class="font-medium text-gray-800 geometric-heading">Integration Ready</h3>
+          </div>
+          <p class="text-gray-600 text-sm geometric-subheading">
+            Seamlessly integrate with your existing HR, payroll, and project management systems via API.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section id="testimonials" class="mt-20 bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 text-white max-w-6xl mx-auto geometric-border">
+      <h2 class="text-3xl font-bold text-center mb-2 geometric-heading">What Our Customers Say</h2>
+      <p class="text-center mb-12 max-w-2xl mx-auto opacity-90 geometric-subheading">
+        Join hundreds of companies that have transformed their attendance management
+      </p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-white bg-opacity-10 p-6 rounded-xl backdrop-blur-sm geometric-border">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4 geometric-border">
+              <span class="font-bold">JD</span>
+            </div>
+            <div>
+              <h4 class="font-bold geometric-heading">John Davidson</h4>
+              <p class="text-sm opacity-80 geometric-subheading">HR Manager, TechSolutions Inc.</p>
+            </div>
+          </div>
+          <p class="italic geometric-subheading">
+            "PunchCard has reduced our time spent on attendance tracking by 70%. The reporting features are incredibly detailed and saved us countless hours during payroll processing."
+          </p>
+        </div>
+        
+        <div class="bg-white bg-opacity-10 p-6 rounded-xl backdrop-blur-sm geometric-border">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4 geometric-border">
+              <span class="font-bold">SM</span>
+            </div>
+            <div>
+              <h4 class="font-bold geometric-heading">Sarah Mitchell</h4>
+              <p class="text-sm opacity-80 geometric-subheading">Operations Director, RetailPlus</p>
+            </div>
+          </div>
+          <p class="italic geometric-subheading">
+            "The mobile accessibility has been a game-changer for our field staff. They can clock in from any location, and we get real-time updates. Implementation was smooth and support has been excellent."
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="mt-20 max-w-4xl mx-auto">
+      <h2 class="text-3xl font-bold text-center text-gray-800 mb-2 geometric-heading">Get In Touch</h2>
+      <p class="text-gray-600 text-center mb-12 max-w-2xl mx-auto geometric-subheading">
+        Ready to transform your attendance management? Contact our team for a personalized demo.
+      </p>
+      
+      <div class="bg-white rounded-2xl shadow-lg p-8 geometric-border">
+        <form id="contact-form" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="contact-name" class="block text-gray-700 mb-2 geometric-heading">Full Name</label>
+            <input type="text" id="contact-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent geometric-border" required>
+            <div class="error-message hidden" id="name-error"></div>
+          </div>
+          
+          <div>
+            <label for="contact-email" class="block text-gray-700 mb-2 geometric-heading">Email Address</label>
+            <input type="email" id="contact-email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent geometric-border" required>
+            <div class="error-message hidden" id="email-error"></div>
+          </div>
+          
+          <div class="md:col-span-2">
+            <label for="contact-company" class="block text-gray-700 mb-2 geometric-heading">Company Name</label>
+            <input type="text" id="contact-company" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent geometric-border" required>
+            <div class="error-message hidden" id="company-error"></div>
+          </div>
+          
+          <div class="md:col-span-2">
+            <label for="contact-message" class="block text-gray-700 mb-2 geometric-heading">Message</label>
+            <textarea id="contact-message" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent geometric-border" required></textarea>
+            <div class="error-message hidden" id="message-error"></div>
+          </div>
+          
+          <div class="md:col-span-2">
+            <button type="submit" class="w-full bg-primary text-white py-3 rounded-lg font-medium hover:bg-opacity-90 transition-all flex justify-center items-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 geometric-border">
+              Request Demo
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-8 mt-16">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center space-x-2 mb-4">
+            <div class="geometric-shape bg-white bg-opacity-20 w-6 h-6 flex items-center justify-center">
+              <i data-feather="clock" class="text-white w-4 h-4" aria-hidden="true"></i>
+            </div>
+            <span class="font-bold text-lg geometric-heading">PunchCard</span>
+          </div>
+          <p class="text-gray-400 text-sm geometric-subheading">
+            Modern attendance tracking solutions for businesses of all sizes.
+          </p>
+        </div>
+        
+        <div>
+          <h4 class="font-bold mb-4 geometric-heading">Product</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Features</a></li>
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Pricing</a></li>
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Integrations</a></li>
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Updates</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="font-bold mb-4 geometric-heading">Company</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">About</a></li>
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Blog</a></li>
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Careers</a></li>
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Partners</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="font-bold mb-4 geometric-heading">Support</h4>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Help Center</a></li>
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Contact</a></li>
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Status</a></li>
+            <li><a href="#" class="hover:text-white transition-all geometric-subheading">Documentation</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-gray-700 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+        <div class="text-gray-400 text-sm mb-4 md:mb-0 geometric-subheading">
+          © <span id="year"></span> PunchCard. All rights reserved.
+        </div>
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-white transition-all geometric-subheading">Privacy</a>
+          <a href="#" class="text-gray-400 hover:text-white transition-all geometric-subheading">Terms</a>
+          <a href="#" class="text-gray-400 hover:text-white transition-all geometric-subheading">Cookies</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Login Modal -->
+  <div id="login-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
+    <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 geometric-border">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-800 geometric-heading" id="modal-title">Staff Login</h3>
+        <button id="close-modal" class="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary" aria-label="Close login modal">
+          <i data-feather="x" class="w-5 h-5" aria-hidden="true"></i>
+        </button>
+      </div>
+      
+      <form id="login-form">
+        <div class="mb-4">
+          <label for="email" class="block text-gray-700 mb-2 geometric-heading">Email Address</label>
+          <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent geometric-border" required>
+          <div class="error-message hidden" id="login-email-error"></div>
+        </div>
+        
+        <div class="mb-6">
+          <label for="password" class="block text-gray-700 mb-2 geometric-heading">Password</label>
+          <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent geometric-border" required>
+          <div class="error-message hidden" id="login-password-error"></div>
+        </div>
+        
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center">
+            <input type="checkbox" id="remember" class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary geometric-border">
+            <label for="remember" class="ml-2 text-gray-700 geometric-subheading">Remember me</label>
+          </div>
+          <a href="#" class="text-primary hover:underline geometric-subheading">Forgot password?</a>
+        </div>
+        
+        <button type="submit" class="w-full bg-primary text-white py-3 rounded-lg font-medium hover:bg-opacity-90 transition-all flex justify-center items-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 geometric-border">
+          Sign In
+        </button>
+      </form>
+      
+      <p class="text-center text-gray-600 mt-6 geometric-subheading">
+        Don't have an account? <a href="#" class="text-primary hover:underline">Contact administrator</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // Initialize Supabase
+    const supabaseUrl = 'https://rbuwscmbaxycyahrjoyv.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJidXdzY21iYXh5Y3lhaHJqb3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2NjEyODQsImV4cCI6MjA3NjIzNzI4NH0.KqB9F0QJ5vLLW5P0UBVs20pnbUcggMk1obY7ls0Z96A';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Initialize Feather Icons
+    feather.replace();
+    
+    // Set current year in footer
+    document.getElementById("year").textContent = new Date().getFullYear();
+    
+    // Mobile menu toggle
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    
+    mobileMenuButton.addEventListener('click', () => {
+      const isHidden = mobileMenu.classList.contains('hidden');
+      if (isHidden) {
+        mobileMenu.classList.remove('hidden');
+        mobileMenuButton.setAttribute('aria-expanded', 'true');
+        feather.replace();
+      } else {
+        mobileMenu.classList.add('hidden');
+        mobileMenuButton.setAttribute('aria-expanded', 'false');
+      }
+    });
+    
+    // Login modal functionality
+    const loginButtons = document.querySelectorAll('.login-btn');
+    const loginModal = document.getElementById('login-modal');
+    const closeModal = document.getElementById('close-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const loginForm = document.getElementById('login-form');
+    
+    loginButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const portal = button.getAttribute('data-portal');
+        modalTitle.textContent = portal === 'staff' ? 'Staff Login' : 'Supervisor Login';
+        loginModal.classList.remove('hidden');
+        loginModal.setAttribute('aria-hidden', 'false');
+        
+        // Set focus to first input in modal for accessibility
+        setTimeout(() => {
+          document.getElementById('email').focus();
+        }, 100);
+      });
+    });
+    
+    closeModal.addEventListener('click', () => {
+      loginModal.classList.add('hidden');
+      loginModal.setAttribute('aria-hidden', 'true');
+    });
+    
+    // Close modal when clicking outside
+    loginModal.addEventListener('click', (e) => {
+      if (e.target === loginModal) {
+        loginModal.classList.add('hidden');
+        loginModal.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    // Toast notification function
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      toast.setAttribute('role', 'alert');
+      toast.setAttribute('aria-live', 'assertive');
+      
+      document.getElementById('toast-container').appendChild(toast);
+      
+      // Show toast
+      setTimeout(() => toast.classList.add('show'), 100);
+      
+      // Hide after 5 seconds
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 5000);
+    }
+
+    // Login form submission
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const portalType = modalTitle.textContent.includes('Staff') ? 'staff' : 'supervisor';
+      
+      // Show loading state
+      const submitBtn = loginForm.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.innerHTML = '<div class="btn-loading"></div>';
+      submitBtn.disabled = true;
+      
+      try {
+        // Sign in with Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+        
+        if (error) throw error;
+        
+        // Login successful
+        showToast('Login successful! Redirecting...', 'success');
+        
+        // Store user session
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('portalType', portalType);
+        
+        // Redirect based on portal type
+        setTimeout(() => {
+          if (portalType === 'staff') {
+            window.location.href = 'staff-dashboard.html';
+          } else {
+            window.location.href = 'supervisor-dashboard.html';
+          }
+        }, 1500);
+        
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        // Reset button state
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+
+    // Contact form submission
+    const contactForm = document.getElementById('contact-form');
+    contactForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = {
+        name: document.getElementById('contact-name').value,
+        email: document.getElementById('contact-email').value,
+        company: document.getElementById('contact-company').value,
+        message: document.getElementById('contact-message').value,
+        created_at: new Date().toISOString()
+      };
+      
+      const submitBtn = contactForm.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.innerHTML = 'Sending...';
+      submitBtn.disabled = true;
+      
+      try {
+        // Insert into Supabase
+        const { data, error } = await supabase
+          .from('contact_requests')
+          .insert([formData]);
+        
+        if (error) throw error;
+        
+        showToast('Demo request sent successfully! We\'ll contact you soon.', 'success');
+        contactForm.reset();
+        
+      } catch (error) {
+        showToast('Error sending request. Please try again.', 'error');
+        console.error('Contact form error:', error);
+      } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      }
+    });
+
+    // Initialize chart
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    const attendanceChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        datasets: [
+          {
+            label: 'Present',
+            data: [45, 48, 46, 47, 49],
+            backgroundColor: '#10B981',
+          },
+          {
+            label: 'Late',
+            data: [3, 2, 4, 1, 2],
+            backgroundColor: '#F59E0B',
+          },
+          {
+            label: 'Absent',
+            data: [2, 0, 0, 2, 1],
+            backgroundColor: '#EF4444',
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: 'Weekly Attendance Overview'
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
