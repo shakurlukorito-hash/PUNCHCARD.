@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supervisor Dashboard | PunchCard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #3B82F6 0%, #10B981 100%);
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .sidebar-link.active {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10B981;
+        }
+        .settings-tab.active {
+            background-color: #3B82F6;
+            color: white;
+        }
+        .github-badge {
+            background-color: #333;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="gradient-bg py-4 shadow-md">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i data-feather="clock" class="text-white w-6 h-6"></i>
+                    <h1 class="text-white text-xl font-bold">PunchCard</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <a href="#" class="text-white hover:text-opacity-80" id="notificationBtn">
+                            <i data-feather="bell" class="w-5 h-5"></i>
+                            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+                        </a>
+                    </div>
+                    <div class="relative">
+                        <a href="#" class="text-white hover:text-opacity-80" id="profileBtn">
+                            <i data-feather="user" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+                    <a href="index.html" class="text-white hover:text-opacity-80" id="logoutBtn">
+                        <i data-feather="log-out" class="w-5 h-5"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row gap-8">
+            <div class="w-full md:w-64 bg-white rounded-lg shadow-sm p-4 h-fit">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div id="userAvatar" class="bg-green-100 w-10 h-10 rounded-full flex items-center justify-center">
+                        <i data-feather="user" class="text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 id="userName" class="font-medium">Loading...</h3>
+                        <p class="text-xs text-gray-500">
+                            <span id="userRole">Supervisor</span>
+                            <span id="githubBadge" class="github-badge hidden">GitHub</span>
+                        </p>
+                    </div>
+                </div>
+                <nav class="space-y-2">
+                    <a href="supervisor-dashboard.html" class="flex items-center space-x-3 p-2 rounded-lg font-medium sidebar-link active">
+                        <i data-feather="home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-2 text-gray-600 hover:bg-gray-100 rounded-lg sidebar-link">
+                        <i data-feather="users"></i>
+                        <span>Team Attendance</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-2 text-gray-600 hover:bg-gray-100 rounded-lg sidebar-link">
+                        <i data-feather="calendar"></i>
+                        <span>Scheduling</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-2 text-gray-600 hover:bg-gray-100 rounded-lg sidebar-link">
+                        <i data-feather="file-text"></i>
+                        <span>Reports</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-2 text-gray-600 hover:bg-gray-100 rounded-lg sidebar-link" id="settingsLink">
+                        <i data-feather="settings"></i>
+                        <span>Settings</span>
+                    </a>
+                </nav>
+                
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Team Stats</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">On Time Rate</span>
+                            <span class="font-medium text-green-600">87%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Avg. Hours</span>
+                            <span class="font-medium text-blue-600">8.2h</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Late This Week</span>
+                            <span class="font-medium text-yellow-600">5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1">
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800" id="welcomeMessage">Welcome back!</h1>
+                    <p class="text-gray-600" id="currentDate">Loading date...</p>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6 fade-in">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">Team Overview</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 card-hover">
+                            <div class="flex items-center justify-between">
+                                <div class="text-blue-800">
+                                    <p class="text-sm font-medium">Total Staff</p>
+                                    <p class="text-2xl font-bold">24</p>
+                                </div>
+                                <div class="bg-blue-100 p-2 rounded-lg">
+                                    <i data-feather="users" class="text-blue-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-green-50 border border-green-100 rounded-lg p-4 card-hover">
+                            <div class="flex items-center justify-between">
+                                <div class="text-green-800">
+                                    <p class="text-sm font-medium">Present Today</p>
+                                    <p class="text-2xl font-bold">18</p>
+                                </div>
+                                <div class="bg-green-100 p-2 rounded-lg">
+                                    <i data-feather="check-circle" class="text-green-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-yellow-50 border border-yellow-100 rounded-lg p-4 card-hover">
+                            <div class="flex items-center justify-between">
+                                <div class="text-yellow-800">
+                                    <p class="text-sm font-medium">Late Today</p>
+                                    <p class="text-2xl font-bold">3</p>
+                                </div>
+                                <div class="bg-yellow-100 p-2 rounded-lg">
+                                    <i data-feather="clock" class="text-yellow-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-red-50 border border-red-100 rounded-lg p-4 card-hover">
+                            <div class="flex items-center justify-between">
+                                <div class="text-red-800">
+                                    <p class="text-sm font-medium">Absent Today</p>
+                                    <p class="text-2xl font-bold">3</p>
+                                </div>
+                                <div class="bg-red-100 p-2 rounded-lg">
+                                    <i data-feather="x-circle" class="text-red-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-6 fade-in">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">Today's Attendance</h2>
+                        <div class="flex space-x-2">
+                            <button class="text-green-600 text-sm font-medium hover:text-green-800" id="exportBtn">
+                                <i data-feather="download" class="w-4 h-4 inline mr-1"></i> Export
+                            </button>
+                            <a href="#" class="text-green-600 text-sm font-medium hover:text-green-800">View All</a>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock In</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock Out</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="attendanceTable">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6 fade-in">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">Pending Approvals</h2>
+                        <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">3 requests</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="approvalsTable">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">System Settings</h3>
+                <button id="closeSettingsModal" class="text-gray-500 hover:text-gray-700">
+                    <i data-feather="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
+                <button class="settings-tab active flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors bg-blue-500 text-white" data-tab="wifi">
+                    WiFi Settings
+                </button>
+                <button class="settings-tab flex-1 py-2 px-4 rounded-md text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors" data-tab="supervisor">
+                    Acting Supervisor
+                </button>
+            </div>
+            
+            <div id="wifiSettings" class="settings-content active">
+                <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <i data-feather="wifi" class="w-5 h-5 mr-2 text-blue-500"></i>
+                    WiFi Access Control
+                </h4>
+                <p class="text-sm text-gray-600 mb-4">
+                    Select up to 3 WiFi networks where staff are allowed to check in. 
+                    Staff must be connected to one of these networks to check in.
+                </p>
+                
+                <div class="space-y-4 mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">WiFi Network 1</label>
+                            <input type="text" id="wifi1" placeholder="Enter WiFi SSID" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="mt-6">
+                            <button class="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 text-sm" onclick="scanWiFi(1)">
+                                Scan
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">WiFi Network 2</label>
+                            <input type="text" id="wifi2" placeholder="Enter WiFi SSID" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="mt-6">
+                            <button class="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 text-sm" onclick="scanWiFi(2)">
+                                Scan
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">WiFi Network 3</label>
+                            <input type="text" id="wifi3" placeholder="Enter WiFi SSID" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="mt-6">
+                            <button class="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 text-sm" onclick="scanWiFi(3)">
+                                Scan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" id="wifiRestriction" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="wifiRestriction" class="ml-2 text-sm font-medium text-gray-700">
+                        Enable WiFi restriction (staff can only check in from approved networks)
+                    </label>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <i data-feather="info" class="w-5 h-5 text-blue-500 mr-2 mt-0.5"></i>
+                        <div>
+                            <p class="text-sm text-blue-800 font-medium">WiFi Restriction Active</p>
+                            <p class="text-xs text-blue-700 mt-1">
+                                Staff will only be able to check in when connected to one of the approved WiFi networks above.
+                                Manual check-in will be disabled if this restriction is enabled.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="supervisorSettings" class="settings-content
